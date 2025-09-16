@@ -12,9 +12,10 @@ using System.Windows.Forms;
 using static Inventory.CustomExceptions;
 
 namespace Inventory
-{
+{   
     public partial class Inventory : Form
     {
+        BindingSource showProductList = new BindingSource();
         CustomExceptions exceptions = new CustomExceptions();
         private string _ProductName;
         private string _Category;
@@ -26,6 +27,7 @@ namespace Inventory
         public Inventory()
         {
             InitializeComponent();
+            
         }
 
         private void Inventory_Load(object sender, EventArgs e)
@@ -49,29 +51,70 @@ namespace Inventory
 
         }
 
+        // Custom Exceptions are called from CustomExceptions.cs
         public string Product_Name(string name)
         {
             if (!Regex.IsMatch(name, @"^[a-zA-Z]+$"))
-                throw new StringFormatException("Product name must only contain letters.");
+                throw new StringFormatException("Product name should only contain alphabetic characters.");
             return name;
         }
 
         public int Quantity(string qty)
         {
-            if (!Regex.IsMatch(qty, @"^[0-9]+$"))  // fixed regex: must match one or more digits
-                throw new NumberFormatException("Quantity must be a valid number.");
+            if (!Regex.IsMatch(qty, @"^[0-9]+$"))
+                throw new NumberFormatException("Quantity must be entered as digits only.");
             return Convert.ToInt32(qty);
         }
 
         public double SellingPrice(string price)
         {
-            if (!Regex.IsMatch(price, @"^(\d+(\.\d{1,2})?)$")) // e.g. 100 or 99.99
-                throw new CurrencyFormatException("Selling price must be a valid currency value.");
+            if (!Regex.IsMatch(price.ToString(), @"^(\d*\.)?\d+$"))
+                throw new CurrencyFormatException("Selling price should be a valid numeric amount.");
             return Convert.ToDouble(price);
         }
 
+        private void button1_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                _ProductName = Product_Name(ProductTxt.Text);
+                _Category = CategoryCmb.Text;
+                _MfgDate = MfgDate.Value.ToString("yyyy-MM-dd");
+                _ExpDate = ExpDate.Value.ToString("yyyy-MM-dd");
+                _Description = DescriptionTxt.Text;
+                _Quantity = Quantity(QtyTxt.Text);
+                _SellPrice = SellingPrice(SellPriceTxt.Text);
 
+                showProductList.Add(new ProductClass(
+                    _ProductName, _Category, _MfgDate,
+                    _ExpDate, _SellPrice, _Quantity, _Description
+                ));
+                    
+                DataGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+                DataGrid.DataSource = showProductList;
+            }
+            catch (StringFormatException ex)
+            {
+                MessageBox.Show(ex.Message, "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (NumberFormatException ex)
+            {
+                MessageBox.Show(ex.Message, "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (CurrencyFormatException ex)
+            {
+                MessageBox.Show(ex.Message, "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                ProductTxt.Clear();
+                CategoryCmb.SelectedIndex = -1;
+                MfgDate.Value = DateTime.Now;
+                ExpDate.Value = DateTime.Now;
+                DescriptionTxt.Clear();
+                QtyTxt.Clear();
+                SellPriceTxt.Clear();
+            }
+        }
     }
-
-
 }
